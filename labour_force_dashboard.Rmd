@@ -1,0 +1,387 @@
+---
+title: "2022 surveys Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: scroll
+    
+    
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(highcharter)
+library(gt)
+library(htmltools)
+library(viridis)
+library(readxl)
+library(dplyr)
+library(rworldmap)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(leaflet)
+library(plotly)
+library(DT)
+library(gganimate)
+library(tweenr)
+library(transformr)
+library(leaflet)
+library(dplyr)
+library(graphics)
+library(googleVis)
+
+#connecting data
+df <- read_excel("C:/Users/YES TECHNOLOGY LTD/Desktop/hackathon/RLFS Tables_ Annual_2022 (1).xlsx", 
+    sheet = "Table 1")
+View(df)
+
+rm <- read_excel("C:/Users/YES TECHNOLOGY LTD/Desktop/hackathon/RLFS Tables_ Annual_2022 (1).xlsx", 
+    sheet = "Sheet1")
+  rm$`2022` <- round(rm$`2022`, 1)
+
+#data for the ap
+
+data <- st_read("C:/Users/YES TECHNOLOGY LTD/Desktop/hackathon/geoBoundaries-RWA-ADM2_simplified.geojson")
+rm <- read_excel("C:/Users/YES TECHNOLOGY LTD/Desktop/hackathon/RLFS Tables_ Annual_2022 (1).xlsx", 
+    sheet = "Sheet1")
+
+merged_data <- merge(data, rm, by.x = "shapeName", by.y = "District", all.x = TRUE)
+  merged_data <- merged_data %>%
+  rename(P.Rate = `2022`, District = shapeName)
+merged_data$P.Rate <- round(merged_data$P.Rate, 1)
+```
+
+
+LABOR FORCE 2022 {data-orientation=rows}
+==========================================================================
+
+
+## Row 1 
+
+
+### Chart A 
+
+```{r}
+valueBox(value = 56,caption = "<font size='2'>2022 Participation Rate ", icon = "fa-users", color = "#FFB000")
+```
+
+### Chart A 
+
+```{r fig.height=1}
+valueBox(value = 44.5,caption = "<font size='2'>2022 Employment to Population", icon = "fa-briefcase", color = "#54B435")
+```
+
+### Chart A 
+
+
+```{r fig.height=1}
+valueBox(value = 20.5,caption = "<font size='2'>2022 Unemployment Rate", icon = "fa-bed", color = "#FF1E00")
+```
+
+###
+
+```{r}
+gauge(56, min = 0,max = 100)
+```
+
+## Row 2 {dada.height = 20}
+
+
+###
+
+```{r data.width=5}
+valueBox('Participation Rate By Districts', caption = "Place the culsor to the map and click to view district data",icon = "fa-map", color="white")
+```
+
+
+###
+
+
+```{r fig.height=1}
+
+valueBox('2022 LFS Indicators ', caption = "<font size='2'>labour Underutilization", icon = "fa-area-chart", color = "#0C356A")
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### 
+
+```{r}
+lab <- paste0( 
+  "<strong>\nDistrict: </strong>", merged_data$District, 
+  "\n, <strong>2022 Partcipation rate(%): </strong>", merged_data$P.Rate, 
+  "\n, <strong>2021 Partcipation rate(%): </strong>", merged_data$`2021`, 
+  "\n, <strong>2020 Partcipation rate(%): </strong>", merged_data$`2020`)
+
+
+
+
+# Your Leaflet map code
+map <- leaflet() %>%
+  addTiles() %>%
+  addPolygons(data = merged_data,
+              fillColor = ~viridis::mako(n = 30),
+              fillOpacity = 0.3,
+              color = "#1A5D1A",
+              weight = 1,
+              highlightOptions = highlightOptions(
+                fillOpacity = 0.7,
+                color = "#FF1E00"
+              ),
+              label = ~District,
+              popup = ~paste("<strong>*</strong>", lab) %>% lapply(htmltools::HTML))
+map
+```
+
+
+
+### <strong>Population of 16 years old and over<strong>
+
+```{r}
+# Colors
+custom_colors <- viridis::mako(n = 7)
+
+hc <- highchart() %>%
+  hc_xAxis(categories = df$Indicators) %>% 
+  hc_yAxis(title = list(text = "Population")) %>% 
+  hc_add_series(name = "Population size",
+                data = df$Population,
+                color = custom_colors,  # Set the desired color
+                borderWidth = 0,  # Set border width
+                borderRadius = 0) %>%  # Set border radius
+  hc_tooltip(valueSuffix = " persons",
+             valueDecimals = 0) %>%
+  hc_colorAxis(custom_colors) %>%
+  hc_plotOptions(column = list(borderRadius = 3)) %>%
+  hc_chart(type = "column", color = custom_colors) %>%  hc_add_theme(hc_theme_google()) %>%
+  hc_credits(enabled = TRUE, text = 'from -> LFSR @NISR') %>%
+  hc_title(text = 'Population of 16 years old and over (working age)',
+           style = list(fontSize = '22px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'By Number of Population for each Indicator',
+              style = list(fontSize = '16px'))
+
+hc
+```
+
+Column {.tabset data-width=350}
+-----------------------------------------------------------------------
+
+### <strong>Labor Force <strong>
+
+```{r}
+# Colors
+custom_colors <- viridis::plasma(n = 7)
+
+# Labor force population 
+
+ hchart(df, 'column', hcaes(x = Indicators, y = `Labour force`, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = 'Population: {point.y} persons',
+             valueDecimals = 0) %>% 
+  hc_title(text = 'Labour Force',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'Population size per indicator',
+              style = list(fontSize = '16px')) %>% 
+  hc_credits(enabled = TRUE, text = 'from -> LFSR @NISR')
+```
+
+### <strong>Outside Labor Force <strong>
+
+```{r}
+# Colors
+custom_colors <- viridis::plasma(n = 7)
+
+# Labor force population 
+
+ hchart(df, 'column', hcaes(x = Indicators, y = `Outside labour force`, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = 'Population: {point.y} persons',
+             valueDecimals = 0) %>% 
+  hc_title(text = 'Outside Labour Force',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'Population size per indicator',
+              style = list(fontSize = '16px')) %>% 
+  hc_credits(enabled = TRUE, text = 'from -> LFSR @NISR')
+```
+
+### <strong>Employment to Population Ratio <strong>
+
+```{r}
+# Colors
+custom_colors <- viridis::plasma(n = 7)
+
+# Labor force population 
+
+ hchart(df, 'column', hcaes(x = Indicators, y = `Employment-to-population ratio(%)`, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = 'Employed size: {point.y} %',
+             valueDecimals = 2) %>% 
+  hc_title(text = 'Employment-to-population ratio',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'Employment-to-population ratio percentages per Indicator',
+              style = list(fontSize = '16px')) %>% 
+  hc_credits(enabled = TRUE, text = 'from -> LFSR @NISR')
+```
+
+
+### <strong>Labor Force Trends <strong>
+
+```{r}
+# Load the required libraries
+library(plotly)
+
+# Create a sample dataset with participation rate, unemployment rate, and underutilization rate for six years
+data <- data.frame(
+  Year = 2017:2022,
+  Participation_Rate = c(53.4, 54.2, 53.4, 56.4, 54, 56),
+  Employment_Rate = c(44.2, 46, 45.3, 46.3, 42.6, 44.5),
+  Unemployment_Rate = c(17.3, 15.1, 15.2, 17.9, 21.1, 20.5)
+)
+
+# Create a line chart with gradient colors using plotly
+line_chart <- plot_ly(data, x = ~Year) %>%
+  add_trace(y = ~Participation_Rate, name = "Participation Rate", line = list(color = "#1C6758")) %>%
+  add_trace(y = ~Unemployment_Rate, name = "Unemployment Rate", line = list(color = "#2192FF")) %>%
+  add_trace(y = ~Employment_Rate, name = "Employnent Rate", line = list(color = "FF1E00")) %>%
+  layout(
+    title = "Labor Force Trends (2017-2022)",
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "Rate (%)"),
+    showlegend = TRUE,
+    hovermode = "x",
+    autosize = TRUE
+  )
+
+# Print the line chart
+line_chart
+
+
+```
+### <strong>Participation Rate<strong>
+
+```{r}
+# Colors
+custom_colors <- viridis::plasma(n = 7)
+
+# Labor force population 
+
+hchart(df, type = 'pie', hcaes(x = Indicators, y = `Labour force participation rate(%)`, color = custom_colors)) %>% 
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_tooltip(pointFormat = 'Population size: {point.y} %',
+             valueDecimals = 2) %>% 
+  hc_title(text = 'Labour force Participation rate',
+           style = list(fontSize = '20px', fontWeight = 'bold')) %>% 
+  hc_subtitle(text = 'Participation rate percentages',
+              style = list(fontSize = '10px')) %>% 
+  hc_credits(enabled = TRUE, text = 'from -> LFSR @NISR')
+```
+
+
+
+### <strong>Participation Rate by Districts<strong>
+```{r}
+div(style = 'height:600px; overflow-y:scroll', gt(rm) %>% 
+      tab_header(title = md('participation rate of distrcts in 6 years'),
+                 subtitle = md('percentages of labor force partipation by Year  <strong>(2022 Total Rate by country = 56%)')) %>% 
+      opt_table_font(font = list(google_font('Chivo'), default_fonts())) %>% 
+      tab_style(location = cells_column_labels(columns = everything()),
+                style = list(cell_borders(sides = 'bottom', 
+                                          weight = px(2)), 
+                             cell_text(weight = 'bold'))) %>% 
+      tab_options(table.font.size = px(12L),
+                  table.border.top.style = 'none',
+                  column_labels.border.bottom.width = 2,
+                  table_body.border.top.style = 'none',
+                  data_row.padding = px(3))
+    )
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### LFS 2022 Summary Table 
+
+```{r}
+div(style = 'height:600px; overflow-y:scroll', gt(df) %>% 
+      opt_table_font(font = list(google_font('Chivo'), default_fonts())) %>% 
+      tab_style(location = cells_column_labels(columns = everything()),
+                style = list(cell_borders(sides = 'bottom', 
+                                          weight = px(2)), 
+                             cell_text(weight = 'bold'))) %>% 
+      tab_options(table.font.size = px(12L),
+                  table.border.top.style = 'none',
+                  column_labels.border.bottom.width = 2,
+                  table_body.border.top.style = 'none',
+                  data_row.padding = px(3))
+    )
+```
+
+### Employment by Sector
+
+```{r}
+# Load the required library
+library(plotly)
+
+# Create a sample dataset
+data <- data.frame(
+  Category = c("Pivate Sector", "Household Sector", "Public Sector"),
+  Value = c(90.1, 3.8, 6.1)
+)
+
+# Create a donut pie chart
+donut_chart <- plot_ly(data, labels = ~Category, values = ~Value, type = "pie", hole = 0.6) %>%
+  layout(title = "Donut Pie Chart",
+         subtitlt = "")
+colors <- viridis(3, option = "ferno")
+
+# Create a donut pie chart with a title and the "mako" color palette
+donut_chart <- plot_ly(data, labels = ~Category, values = ~Value, type = "pie", hole = 0.6) %>%
+  layout(
+    title = "Employment by Sector",
+    titlefont = list(size = 15),  # Adjust title font size
+    showlegend = TRUE,
+    legend = list(x = 0.85, y = 0.2),  # Adjust legend position
+    paper_bgcolor = "white",  # Set background color
+    plot_bgcolor = "white",   # Set plot area background color
+    colorway = colors
+  )
+# Display the chart
+donut_chart
+
+```
+
+### Industry Distribution
+
+```{r}
+# Create a sample dataset
+data <- data.frame(
+  Category = c("Market orianted agriculture", "Industy", "Service"),
+  Value = c(46.8, 17.3, 35.9)
+)
+
+
+colors <- viridis(3, option = "inferno")
+
+# Create a donut pie chart with a title and the "mako" color palette
+donut_chart <- plot_ly(data, labels = ~Category, values = ~Value, type = "pie", hole = 0.6) %>%
+  layout(
+    title = "Industry Distribution",
+    subtitlt = "percentage of Labor Distribution by Sector",
+    titlefont = list(size = 15),  # Adjust title font size
+    showlegend = TRUE,
+    legend = list(x = 0.85, y = 0.2),  # Adjust legend position
+    paper_bgcolor = "white",  # Set background color
+    plot_bgcolor = "white",   # Set plot area background color
+    colorway = colors
+  )
+# Display the chart
+donut_chart
+
+
+```
+
