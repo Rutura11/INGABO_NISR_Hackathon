@@ -42,8 +42,6 @@ The 2022 Surveys Interactive Dashboard is a Shiny web application developed for 
 
 ## Acknowledgments
 
-This dashboard was developed by the "Ingabo" group for the NISR hackathon competition.
+This dashboard was developed by the "Ingabo" group for the NISR hackathon competition (2023).
 
-## License
 
-This project is licensed under the [MIT License](LICENSE.md).
