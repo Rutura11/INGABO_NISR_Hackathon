@@ -1,6 +1,4 @@
-Certainly! Below is a basic README template that you can use to document your Shiny dashboard:
 
----
 
 # Interactive Dashboard for Economic Surveys (Year 2022)
 
